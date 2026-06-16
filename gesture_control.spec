@@ -1,18 +1,21 @@
 # gesture_control.spec
 import sys
 import os
-from pathlib import Path
 import mediapipe as mp
+import cv2
 
 mediapipe_path = os.path.dirname(mp.__file__)
+cv2_path = os.path.dirname(cv2.__file__)
 
 block_cipher = None
+
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
     datas=[
         (mediapipe_path, 'mediapipe'),
+        (cv2_path, 'cv2'),
     ],
     hiddenimports=[
         'mediapipe',
@@ -22,11 +25,17 @@ a = Analysis(
         'PIL',
         'PIL.Image',
         'PIL.ImageTk',
+        'PIL.ImageDraw',
+        'PIL.ImageFilter',
         'screen_brightness_control',
         'numpy',
         'pycaw',
         'comtypes',
         'comtypes.client',
+        'pystray',
+        'pystray._darwin',
+        'pystray._win32',
+        'pystray._xorg',
     ],
     hookspath=[],
     hooksconfig={},
@@ -37,7 +46,9 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -54,6 +65,7 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
 coll = COLLECT(
     exe,
     a.binaries,
@@ -64,6 +76,7 @@ coll = COLLECT(
     upx_exclude=[],
     name='GestureControl',
 )
+
 if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
@@ -73,5 +86,6 @@ if sys.platform == 'darwin':
         info_plist={
             'NSCameraUsageDescription': 'Gesture Control necesita acceso a la cámara para detectar gestos de mano.',
             'NSHighResolutionCapable': True,
+            'LSMinimumSystemVersion': '11.0',
         },
     )
