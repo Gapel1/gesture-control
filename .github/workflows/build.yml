@@ -24,6 +24,11 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      - name: Instalar brightness
+        run: |
+          brew install brightness
+          cp $(which brightness) brightness_bin
+
       - name: Compilar app con PyInstaller
         run: pyinstaller gesture_control.spec
 
