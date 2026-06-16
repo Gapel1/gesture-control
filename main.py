@@ -443,7 +443,7 @@ class GestureControlApp:
         self._build_ui()
         self._start_camera()
         self._update_frame()
-        self._start_tray()
+        self.root.after(500, self._start_tray)
 
     # ── UI ───────────────────────────────────────────────────────────────────
 
