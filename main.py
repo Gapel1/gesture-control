@@ -135,7 +135,7 @@ mp_draw  = mp.solutions.drawing_utils
 BG            = "#0a0a14"
 GLASS         = "#13131f"
 GLASS2        = "#1a1a2e"
-BORDER        = "#ffffff14"
+BORDER        = "#252538"
 ACCENT_V      = "#7c6fff"
 ACCENT_B      = "#ff6fb0"
 TEXT          = "#f0f0f0"
@@ -203,11 +203,16 @@ class AnimatedSlider(tk.Canvas):
         pct    = self._display / 100.0
         fill_y = bot - int(bar_h * pct)
 
-        # Glow behind fill (fake blur via layered lines)
-        glow_color = self.color + "33"
-        for offset in range(6, 0, -2):
+        # Glow behind fill (layered lines, no alpha)
+        glow_colors = [
+            lerp_color(BG, self.color, 0.15),
+            lerp_color(BG, self.color, 0.25),
+            lerp_color(BG, self.color, 0.35),
+        ]
+        for i, gc in enumerate(glow_colors):
+            offset = (3 - i) * 2
             self.create_line(cx, fill_y, cx, bot,
-                             fill=self.color + f"{offset * 8:02x}",
+                             fill=gc,
                              width=tw + offset * 2, capstyle=tk.ROUND)
 
         # Track
@@ -219,15 +224,15 @@ class AnimatedSlider(tk.Canvas):
             self.create_line(cx, fill_y, cx, bot,
                              fill=self.color, width=tw, capstyle=tk.ROUND)
 
-        # Knob glow
+        # Knob glow (no alpha)
+        knob_glow = lerp_color(BG, self.color, 0.4)
         for r in range(12, 5, -2):
-            alpha = max(0, 60 - (12 - r) * 15)
             self.create_oval(cx - r, fill_y - r, cx + r, fill_y + r,
-                             fill=self.color + f"{alpha:02x}", outline="")
+                             fill=knob_glow, outline="")
 
         # Knob
         self.create_oval(cx - 6, fill_y - 6, cx + 6, fill_y + 6,
-                         fill=self.color, outline="#ffffff44", width=1)
+                         fill=self.color, outline="#444466", width=1)
 
         # Value text
         self.create_text(cx, H - 18, text=f"{int(self._display)}%",
@@ -288,8 +293,9 @@ class AnimatedToggle(tk.Canvas):
         # track
         self._rrect(2, 2, 42, 22, 11, fill=track, outline="")
         # knob shadow
+        shadow = lerp_color(BG, "#000000", 0.3)
         self.create_oval(knob_x - 10, 2, knob_x + 10, 22,
-                         fill="#00000033", outline="")
+                         fill=shadow, outline="")
         # knob
         self.create_oval(knob_x - 9, 3, knob_x + 9, 21,
                          fill="#ffffff", outline="")
@@ -400,10 +406,10 @@ class PulsingDot(tk.Canvas):
         self.delete("all")
         cx, cy = 8, 8
         r      = int(5 * scale)
-        alpha  = int(180 + 75 * (math.sin(self._t) * 0.5 + 0.5))
-        # outer glow
+        # outer glow (no alpha — use lerp_color instead)
+        glow = lerp_color(BG, self.color, 0.4)
         self.create_oval(cx - r - 2, cy - r - 2, cx + r + 2, cy + r + 2,
-                         fill=self.color + f"{alpha // 3:02x}", outline="")
+                         fill=glow, outline="")
         # dot
         self.create_oval(cx - r, cy - r, cx + r, cy + r,
                          fill=self.color, outline="")
