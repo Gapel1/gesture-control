@@ -1,49 +1,58 @@
 """
 system_control.py
 Funciones multiplataforma para leer y ajustar brillo y volumen del sistema.
-
-Brillo  -> usa la librería screen_brightness_control (Windows/macOS/Linux)
-Volumen -> implementación específica por sistema operativo:
-    - Windows: pycaw
-    - macOS:   osascript (built-in, no requiere instalación extra)
-    - Linux:   pactl (pulseaudio-utils)
 """
-
 import platform
 import subprocess
-
+import sys
+import os
 import screen_brightness_control as sbc
 
-SYSTEM = platform.system()  # 'Windows', 'Darwin' (macOS) o 'Linux'
-
+SYSTEM = platform.system()
 
 # ---------------------------------------------------------------------------
 # BRILLO
 # ---------------------------------------------------------------------------
+def _brightness_bin():
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, 'brightness_bin')
+    return 'brightness'
+
 def get_brightness():
-    """Devuelve el brillo actual (0-100) o None si no se puede leer."""
+    if SYSTEM == "Darwin":
+        try:
+            out = subprocess.check_output([_brightness_bin(), "-l"], stderr=subprocess.STDOUT)
+            for line in out.decode().split("\n"):
+                if "brightness" in line and "display" in line:
+                    val = float(line.strip().split()[-1])
+                    return round(val * 100)
+            return None
+        except Exception:
+            return None
     try:
         return sbc.get_brightness()[0]
     except Exception:
         return None
 
-
 def set_brightness(pct):
-    """Intenta fijar el brillo. Devuelve True si tuvo éxito."""
     pct = max(0, min(100, int(round(pct))))
+    if SYSTEM == "Darwin":
+        try:
+            subprocess.run([_brightness_bin(), str(pct / 100)], check=True)
+            return True
+        except Exception:
+            return False
     try:
         sbc.set_brightness(pct)
         return True
     except Exception:
         return False
 
-
 # ---------------------------------------------------------------------------
-# VOLUMEN (implementación según sistema operativo)
+# VOLUMEN
 # ---------------------------------------------------------------------------
 if SYSTEM == "Windows":
     from ctypes import POINTER, cast
-
     from comtypes import CLSCTX_ALL
     from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
@@ -68,8 +77,7 @@ if SYSTEM == "Windows":
         except Exception:
             return False
 
-elif SYSTEM == "Darwin":  # macOS
-
+elif SYSTEM == "Darwin":
     def get_volume():
         try:
             out = subprocess.check_output(
@@ -90,7 +98,6 @@ elif SYSTEM == "Darwin":  # macOS
             return False
 
 elif SYSTEM == "Linux":
-
     def get_volume():
         try:
             out = subprocess.check_output(["pactl", "get-sink-volume", "@DEFAULT_SINK@"])
@@ -112,7 +119,6 @@ elif SYSTEM == "Linux":
             return False
 
 else:
-
     def get_volume():
         return None
 
