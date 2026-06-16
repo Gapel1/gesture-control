@@ -6,9 +6,11 @@ import platform
 import subprocess
 import sys
 import os
-import screen_brightness_control as sbc
 
 SYSTEM = platform.system()
+
+if SYSTEM not in ("Darwin", "Windows"):
+    import screen_brightness_control as sbc
 
 # ---------------------------------------------------------------------------
 # BRILLO
