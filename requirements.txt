@@ -1,0 +1,7 @@
+opencv-python
+mediapipe==0.10.21
+screen-brightness-control
+numpy
+pillow
+pycaw; platform_system=="Windows"
+comtypes; platform_system=="Windows"

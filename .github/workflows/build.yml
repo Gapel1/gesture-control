@@ -1,0 +1,221 @@
+name: Build Installers
+
+on:
+  push:
+    tags:
+      - 'v*'          # Se activa al crear un tag como v1.0.0
+  workflow_dispatch:  # También se puede lanzar manualmente desde GitHub
+
+jobs:
+
+  # ─────────────────────────────────────────────────────────────────────
+  # macOS → GestureControl.dmg
+  # ─────────────────────────────────────────────────────────────────────
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compilar app con PyInstaller
+        run: pyinstaller gesture_control.spec
+
+      - name: Instalar create-dmg
+        run: brew install create-dmg
+
+      - name: Crear .dmg con drag-to-Applications
+        run: |
+          create-dmg \
+            --volname "Gesture Control" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "GestureControl.app" 175 190 \
+            --hide-extension "GestureControl.app" \
+            --app-drop-link 425 190 \
+            "GestureControl-mac.dmg" \
+            "dist/GestureControl.app"
+
+      - name: Subir .dmg como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: GestureControl-mac
+          path: GestureControl-mac.dmg
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Windows → GestureControl-Setup.exe
+  # ─────────────────────────────────────────────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Compilar app con PyInstaller
+        run: pyinstaller gesture_control.spec
+
+      - name: Instalar NSIS (generador de instalador .exe)
+        run: choco install nsis -y
+
+      - name: Crear script NSIS
+        shell: pwsh
+        run: |
+          @"
+          !include "MUI2.nsh"
+
+          Name "Gesture Control"
+          OutFile "GestureControl-Setup.exe"
+          InstallDir "`$PROGRAMFILES64\GestureControl"
+          RequestExecutionLevel admin
+
+          !insertmacro MUI_PAGE_WELCOME
+          !insertmacro MUI_PAGE_DIRECTORY
+          !insertmacro MUI_PAGE_INSTFILES
+          !insertmacro MUI_PAGE_FINISH
+          !insertmacro MUI_UNPAGE_CONFIRM
+          !insertmacro MUI_UNPAGE_INSTFILES
+          !insertmacro MUI_LANGUAGE "Spanish"
+
+          Section "Instalar"
+            SetOutPath "`$INSTDIR"
+            File /r "dist\GestureControl\*"
+            CreateShortcut "`$DESKTOP\Gesture Control.lnk" "`$INSTDIR\GestureControl.exe"
+            CreateShortcut "`$SMPROGRAMS\Gesture Control.lnk" "`$INSTDIR\GestureControl.exe"
+            WriteUninstaller "`$INSTDIR\Uninstall.exe"
+          SectionEnd
+
+          Section "Uninstall"
+            Delete "`$INSTDIR\Uninstall.exe"
+            RMDir /r "`$INSTDIR"
+            Delete "`$DESKTOP\Gesture Control.lnk"
+            Delete "`$SMPROGRAMS\Gesture Control.lnk"
+          SectionEnd
+          "@ | Out-File -Encoding ASCII installer.nsi
+
+      - name: Compilar instalador .exe con NSIS
+        run: makensis installer.nsi
+
+      - name: Subir .exe como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: GestureControl-windows
+          path: GestureControl-Setup.exe
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Linux → GestureControl.AppImage
+  # ─────────────────────────────────────────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Python y dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip python3-venv \
+            libgl1 libglib2.0-0 \
+            libxcb-xinerama0 libxcb1 libx11-6 \
+            fuse libfuse2
+
+      - name: Instalar dependencias Python
+        run: |
+          pip3 install --upgrade pip
+          pip3 install -r requirements.txt
+          pip3 install pyinstaller
+
+      - name: Compilar app con PyInstaller
+        run: pyinstaller gesture_control.spec
+
+      - name: Preparar estructura AppImage
+        run: |
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons
+
+          cp -r dist/GestureControl/* AppDir/usr/bin/
+
+          cat > AppDir/gesture-control.desktop << 'EOF'
+          [Desktop Entry]
+          Name=Gesture Control
+          Exec=GestureControl
+          Icon=gesture-control
+          Type=Application
+          Categories=Utility;
+          EOF
+
+          # Ícono placeholder (1x1 png transparente)
+          printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82' \
+            > AppDir/usr/share/icons/gesture-control.png
+          cp AppDir/usr/share/icons/gesture-control.png AppDir/.DirIcon
+
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          exec "$HERE/usr/bin/GestureControl" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+      - name: Descargar appimagetool
+        run: |
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: Crear AppImage
+        run: |
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir GestureControl.AppImage
+
+      - name: Subir AppImage como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: GestureControl-linux
+          path: GestureControl.AppImage
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Release: adjunta los 3 instaladores al tag de GitHub
+  # ─────────────────────────────────────────────────────────────────────
+  release:
+    needs: [build-mac, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Descargar todos los artefactos
+        uses: actions/download-artifact@v4
+
+      - name: Crear Release con los 3 instaladores
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            GestureControl-mac/GestureControl-mac.dmg
+            GestureControl-windows/GestureControl-Setup.exe
+            GestureControl-linux/GestureControl.AppImage
+          body: |
+            ## Gesture Control — ${{ github.ref_name }}
+
+            Descarga el instalador para tu sistema:
+
+            | Sistema | Archivo |
+            |---------|---------|
+            | macOS | `GestureControl-mac.dmg` |
+            | Windows | `GestureControl-Setup.exe` |
+            | Linux | `GestureControl.AppImage` |
