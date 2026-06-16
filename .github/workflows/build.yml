@@ -165,16 +165,15 @@ jobs:
           Categories=Utility;
           EOF
 
-          # Ícono placeholder (1x1 png transparente)
-          printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82' \
-            > AppDir/usr/share/icons/gesture-control.png
-          cp AppDir/usr/share/icons/gesture-control.png AppDir/.DirIcon
-
-          cat > AppDir/AppRun << 'EOF'
-          #!/bin/bash
-          HERE="$(dirname "$(readlink -f "${0}")")"
-          exec "$HERE/usr/bin/GestureControl" "$@"
-          EOF
+          # Ícono 256x256
+          python3 -c "
+          from PIL import Image, ImageDraw
+          img = Image.new('RGBA', (256, 256), (30, 30, 30, 255))
+          draw = ImageDraw.Draw(img)
+          draw.ellipse([40, 40, 216, 216], fill=(80, 200, 120, 255))
+          img.save('AppDir/gesture-control.png')
+          img.save('AppDir/.DirIcon')
+          "
           chmod +x AppDir/AppRun
 
       - name: Descargar appimagetool
