@@ -1,5 +1,4 @@
 # gesture_control.spec
-# PyInstaller spec file — usado por GitHub Actions para los 3 sistemas operativos.
 import sys
 import os
 from pathlib import Path
@@ -25,7 +24,6 @@ a = Analysis(
         'PIL.ImageTk',
         'screen_brightness_control',
         'numpy',
-        # Windows
         'pycaw',
         'comtypes',
         'comtypes.client',
@@ -66,7 +64,6 @@ coll = COLLECT(
     upx_exclude=[],
     name='GestureControl',
 )
-# macOS: genera un .app bundle
 if sys.platform == 'darwin':
     app = BUNDLE(
         coll,
