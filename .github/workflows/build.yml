@@ -172,6 +172,7 @@ jobs:
           mkdir -p AppDir/usr/share/icons
           cp -r dist/GestureControl/* AppDir/usr/bin/
           printf '[Desktop Entry]\nName=Gesture Control\nExec=GestureControl\nIcon=gesture-control\nType=Application\nCategories=Utility;\n' > AppDir/gesture-control.desktop
+          sudo apt-get install -y imagemagick
           convert -size 256x256 xc:#4A90D9 -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity center -annotate 0 "GC" AppDir/gesture-control.png
           cp AppDir/gesture-control.png AppDir/.DirIcon
 
