@@ -3,14 +3,11 @@ name: Build Installers
 on:
   push:
     tags:
-      - 'v*'          # Se activa al crear un tag como v1.0.0
-  workflow_dispatch:  # También se puede lanzar manualmente desde GitHub
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
 
-  # ─────────────────────────────────────────────────────────────────────
-  # macOS → GestureControl.dmg
-  # ─────────────────────────────────────────────────────────────────────
   build-mac:
     runs-on: macos-latest
     steps:
@@ -52,9 +49,6 @@ jobs:
           name: GestureControl-mac
           path: GestureControl-mac.dmg
 
-  # ─────────────────────────────────────────────────────────────────────
-  # Windows → GestureControl-Setup.exe
-  # ─────────────────────────────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
     steps:
@@ -122,9 +116,6 @@ jobs:
           name: GestureControl-windows
           path: GestureControl-Setup.exe
 
-  # ─────────────────────────────────────────────────────────────────────
-  # Linux → GestureControl.AppImage
-  # ─────────────────────────────────────────────────────────────────────
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -137,7 +128,7 @@ jobs:
             python3-pip python3-venv \
             libgl1 libglib2.0-0 \
             libxcb-xinerama0 libxcb1 libx11-6 \
-            fuse libfuse2
+            fuse libfuse2 imagemagick
 
       - name: Instalar dependencias Python
         run: |
@@ -153,32 +144,25 @@ jobs:
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons
-
-          cp -r dist/GestureControl/* AppDir/usr/bin/
-
-          cat > AppDir/gesture-control.desktop << 'EOF'
-          [Desktop Entry]
-          Name=Gesture Control
-          Exec=GestureControl
-          Icon=gesture-control
-          Type=Application
-          Categories=Utility;
-          EOF
-
-          - name: Preparar estructura AppImage
-        run: |
-          mkdir -p AppDir/usr/bin
-          mkdir -p AppDir/usr/share/applications
-          mkdir -p AppDir/usr/share/icons
           cp -r dist/GestureControl/* AppDir/usr/bin/
           printf '[Desktop Entry]\nName=Gesture Control\nExec=GestureControl\nIcon=gesture-control\nType=Application\nCategories=Utility;\n' > AppDir/gesture-control.desktop
-          sudo apt-get install -y imagemagick
           convert -size 256x256 xc:#4A90D9 -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity center -annotate 0 "GC" AppDir/gesture-control.png
           cp AppDir/gesture-control.png AppDir/.DirIcon
 
-  # ─────────────────────────────────────────────────────────────────────
-  # Release: adjunta los 3 instaladores al tag de GitHub
-  # ─────────────────────────────────────────────────────────────────────
+      - name: Descargar appimagetool
+        run: |
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+      - name: Crear AppImage
+        run: ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir GestureControl.AppImage
+
+      - name: Subir AppImage como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: GestureControl-linux
+          path: GestureControl.AppImage
+
   release:
     needs: [build-mac, build-windows, build-linux]
     runs-on: ubuntu-latest
