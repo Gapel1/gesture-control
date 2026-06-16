@@ -182,10 +182,7 @@ jobs:
           Categories=Utility;
           EOF
 
-          convert -size 256x256 xc:#4A90D9 \
-            -fill white -font DejaVu-Sans-Bold -pointsize 60 \
-            -gravity center -annotate 0 "GC" \
-            AppDir/gesture-control.png
+          convert -size 256x256 xc:#4A90D9 -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity center -annotate 0 "GC" AppDir/gesture-control.png
 
           cp AppDir/gesture-control.png AppDir/.DirIcon
 
