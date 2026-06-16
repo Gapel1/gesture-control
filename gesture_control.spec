@@ -84,8 +84,11 @@ if sys.platform == 'darwin':
         icon=None,
         bundle_identifier='com.gesturecontrol.app',
         info_plist={
-            'NSCameraUsageDescription': 'Gesture Control necesita acceso a la cámara para detectar gestos de mano.',
-            'NSHighResolutionCapable': True,
-            'LSMinimumSystemVersion': '11.0',
+    'NSCameraUsageDescription': 'Gesture Control necesita acceso a la cámara para detectar gestos de mano.',
+    'NSHighResolutionCapable': True,
+    'LSMinimumSystemVersion': '11.0',
+    'LSUIElement': True,  # ← permite tray sin dock icon
+    'NSPrincipalClass': 'NSApplication',
+    'NSAppleScriptEnabled': False,
         },
     )
