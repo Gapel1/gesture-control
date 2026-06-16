@@ -165,15 +165,11 @@ jobs:
           Categories=Utility;
           EOF
 
-          # Ícono 256x256
-          python3 -c "
-          from PIL import Image, ImageDraw
-          img = Image.new('RGBA', (256, 256), (30, 30, 30, 255))
-          draw = ImageDraw.Draw(img)
-          draw.ellipse([40, 40, 216, 216], fill=(80, 200, 120, 255))
-          img.save('AppDir/gesture-control.png')
-          img.save('AppDir/.DirIcon')
-          "
+          # Ícono 256x256 con ImageMagick
+          convert -size 256x256 xc:'#1e1e1e' \
+            -fill '#50c878' -draw 'ellipse 128,128 88,88 0,360' \
+            AppDir/gesture-control.png
+          cp AppDir/gesture-control.png AppDir/.DirIcon
           chmod +x AppDir/AppRun
 
       - name: Descargar appimagetool
