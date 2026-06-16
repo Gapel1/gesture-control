@@ -1,16 +1,20 @@
 # gesture_control.spec
 # PyInstaller spec file — usado por GitHub Actions para los 3 sistemas operativos.
-
 import sys
+import os
 from pathlib import Path
+import mediapipe as mp
+
+mediapipe_path = os.path.dirname(mp.__file__)
 
 block_cipher = None
-
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[
+        (mediapipe_path, 'mediapipe'),
+    ],
     hiddenimports=[
         'mediapipe',
         'mediapipe.python.solutions.hands',
@@ -35,9 +39,7 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
-
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
 exe = EXE(
     pyz,
     a.scripts,
@@ -48,13 +50,12 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,          # Sin ventana de terminal
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
 )
-
 coll = COLLECT(
     exe,
     a.binaries,
@@ -65,7 +66,6 @@ coll = COLLECT(
     upx_exclude=[],
     name='GestureControl',
 )
-
 # macOS: genera un .app bundle
 if sys.platform == 'darwin':
     app = BUNDLE(
