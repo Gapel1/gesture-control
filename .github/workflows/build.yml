@@ -113,7 +113,8 @@ jobs:
           "@ | Out-File -Encoding ASCII installer.nsi
 
       - name: Compilar instalador .exe con NSIS
-        run: makensis installer.nsi
+        run: '& "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi'
+        shell: pwsh
 
       - name: Subir .exe como artefacto
         uses: actions/upload-artifact@v4
