@@ -166,24 +166,13 @@ jobs:
           EOF
 
           - name: Preparar estructura AppImage
-          run: |
+        run: |
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons
-
           cp -r dist/GestureControl/* AppDir/usr/bin/
-
-          cat > AppDir/gesture-control.desktop << 'EOF'
-          [Desktop Entry]
-          Name=Gesture Control
-          Exec=GestureControl
-          Icon=gesture-control
-          Type=Application
-          Categories=Utility;
-          EOF
-
+          printf '[Desktop Entry]\nName=Gesture Control\nExec=GestureControl\nIcon=gesture-control\nType=Application\nCategories=Utility;\n' > AppDir/gesture-control.desktop
           convert -size 256x256 xc:#4A90D9 -fill white -font DejaVu-Sans-Bold -pointsize 60 -gravity center -annotate 0 "GC" AppDir/gesture-control.png
-
           cp AppDir/gesture-control.png AppDir/.DirIcon
 
   # ─────────────────────────────────────────────────────────────────────
